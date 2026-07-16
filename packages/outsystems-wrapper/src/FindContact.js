@@ -1,25 +1,32 @@
 // JS node for the FindContact client action.
 // Inputs: SearchParameter (Text), MultipleContacts (Boolean)
-// Outputs: Success (Boolean), ErrorMessage (Text), ContactsJSON (Text)
-// The Capacitor shell (ODC / MABS 12+) uses @capacitor/contacts; the Cordova
-// shell (O11 / MABS 11) uses cordova-outsystems-contacts. Both expose the
-// same API; only the invocation style (promise vs. callback) differs.
+// Outputs: Success (Boolean), ErrorCode (Text), ErrorMessage (Text), ContactsJSON (Text)
+// Three runtimes, checked in order: the Capacitor plugin (ODC / MABS 12+),
+// the new Cordova plugin (MABS 11 builds), and the legacy navigator.contacts
+// plugin (older native builds receiving this script over the air).
 
-function onSuccess(result) {
-  // Legacy wire shape: birthday serialized as an ISO string (a JS Date),
-  // so downstream TextToDateTime logic keeps working unchanged.
-  var contacts = result.contacts.map(function (c) {
-    if (c.birthday != null) c.birthday = new Date(c.birthday);
-    return c;
-  });
+function finish(contacts) {
   $parameters.Success = true;
   $parameters.ErrorMessage = '';
   $parameters.ContactsJSON = JSON.stringify(contacts);
   $resolve();
 }
 
+function onSuccess(result) {
+  // The previous plugin returned birthday as a JS Date, which JSON.stringify
+  // turns into an ISO string. Keep that, so flows that parse it with
+  // TextToDateTime keep working.
+  finish(
+    result.contacts.map(function (c) {
+      if (c.birthday != null) c.birthday = new Date(c.birthday);
+      return c;
+    }),
+  );
+}
+
 function onError(error) {
   $parameters.Success = false;
+  $parameters.ErrorCode = error && error.code != null ? String(error.code) : '';
   $parameters.ErrorMessage = error && error.message ? error.message : 'Could not find contact';
   $resolve();
 }
@@ -36,6 +43,12 @@ const CapacitorContacts =
 
 if (CapacitorContacts) {
   CapacitorContacts.find(options).then(onSuccess, onError);
-} else {
+} else if (typeof cordova !== 'undefined' && cordova.plugins && cordova.plugins.Contacts) {
   cordova.plugins.Contacts.find(options, onSuccess, onError);
+} else {
+  // Legacy plugin: returns a plain array, birthdays already JS Dates.
+  let legacyOptions = new ContactFindOptions();
+  legacyOptions.filter = $parameters.SearchParameter;
+  legacyOptions.multiple = $parameters.MultipleContacts;
+  navigator.contacts.find(['*'], finish, onError, legacyOptions);
 }

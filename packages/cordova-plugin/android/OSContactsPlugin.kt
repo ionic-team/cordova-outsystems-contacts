@@ -13,8 +13,8 @@ import org.json.JSONObject
 /**
  * Cordova bridge for the OutSystems Contacts plugin.
  *
- * Permission model is **implicit** (matching the Capacitor plugin and the
- * legacy cordova-plugin-contacts): there are no checkPermissions /
+ * Permission model is **implicit** (the same model as the Capacitor
+ * plugin): there are no checkPermissions /
  * requestPermissions actions. Each action ensures the permission it needs
  * before touching the provider — READ_CONTACTS for `find`/`pickContact`,
  * READ+WRITE for `save`/`remove`. Provider work runs on the Cordova thread
@@ -80,7 +80,7 @@ class OSContactsPlugin : CordovaPlugin() {
     // Implicit permission handling
     // ------------------------------------------------------------------
 
-    /** The permissions each action needs, mirroring the legacy per-action split. */
+    /** The permissions each action needs. */
     private fun permissionsFor(action: String): Array<String> = when (action) {
         "save", "remove" -> READ_WRITE
         else -> READ

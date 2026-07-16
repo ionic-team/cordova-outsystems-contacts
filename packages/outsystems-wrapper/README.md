@@ -2,18 +2,21 @@
 
 Reference source for the JS nodes of the OutSystems Contacts plugin (the
 Mobile Library wrapping the unified plugin pair). Each script runtime-detects
-the shell: the Capacitor plugin (`CapacitorPlugins.Contacts`, promise API) on
-ODC / MABS 12+, or the Cordova plugin (`cordova.plugins.Contacts`, callback
-API) on O11 / MABS 11. Both plugins expose the exact same API — method names,
-options, result shapes and `OS-PLUG-CONT-*` error codes — so each node shares
-one set of handlers and differs only in how the call is dispatched. When
-these scripts change, copy them into the corresponding JS node in ODC Studio.
+the shell, in order: the Capacitor plugin (`CapacitorPlugins.Contacts`,
+promise API) on ODC / MABS 12+, the new Cordova plugin
+(`cordova.plugins.Contacts`, callback API) on MABS 11 builds, and finally the
+legacy `navigator.contacts` plugin. The legacy branch exists for over-the-air
+updates: an installed app that receives this script without a new native
+build still carries the legacy plugin, and keeps working through the old API
+until it is rebuilt. The two new plugins expose the exact same API — method
+names, options, result shapes and `OS-PLUG-CONT-*` error codes. When these
+scripts change, copy them into the corresponding JS node in ODC Studio.
 
 | File (`src/`) | JS node (client action) | Notes |
 | --- | --- | --- |
 | `FindContact.js` | `FindContactJS` (FindContact) | `ContactsJSON` is byte-compatible with the previous release (birthday serialized as an ISO string); the deserialize/ForEach flow needs no changes. |
 | `AddToContacts.js` | `AddToContactsJS` (AddToContacts) | Same FirstName/LastName/Phone/Email arguments; the flow's email-validation step is untouched. |
-| `RemoveFromContacts.js` | `RemoveFromContactsJS` (RemoveFromContacts) | Flow edits required: change the client action input from the Contact record to `ContactId` (Text), delete the `JSONSerialize1` node, and point the JS node's argument at `ContactId`. |
+| `RemoveFromContacts.js` | `RemoveFromContactsJS` (RemoveFromContacts) | New action signature takes `ContactId` (Text). Keep the old signature as `DEPRECATED_RemoveFromContacts` (input: the Contact record) whose flow only calls the new action with `Contact.Id` — no JS node of its own. In the new action's flow, delete the `JSONSerialize1` node and point the JS node's argument at `ContactId`. |
 | `PickContact.js` | `PickContact` (PickContact) | No arguments; same `ContactJSON` output on both branches. |
 | `CheckContactsPlugin.js` | `IsPluginAvailableJS` (CheckContactsPlugin) | **Must be updated**: the current node checks only `cordova`/`navigator`, so Capacitor builds would report the plugin unavailable and every action would short-circuit at the "Is Contacts Plugin available?" gate. The new check requires the actual plugin object on both shells. |
 
@@ -24,6 +27,13 @@ per shell — pin both npm sources to released tags before shipping.
 needed it for its `AccountManager` save path, but neither of the new plugins
 touches accounts. Create the `ContactsUsageDescription` extensibility setting
 in ODC Studio.
+
+Every action node now outputs `ErrorCode` (Text) populated from the
+rejection's `code` (`OS-PLUG-CONT-NNNN`; on the legacy fallback branch, the
+old plugin's numeric W3C code as text). Add the output parameter to each JS
+node, and replace any hardcoded error-code constants in the client action
+flows (Assigns of `"0"`/`"1"`/`"2"`/`"3"`/`"-1"` into the Error structure)
+with the node's `ErrorCode` output.
 
 Migration note: contact `id`s are the platform-native identifiers
 (`CNContact` identifiers on iOS, `ContactsContract` ids on Android). Numeric

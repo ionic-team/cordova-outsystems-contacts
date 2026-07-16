@@ -4,8 +4,8 @@ import Foundation
 
 /// Cordova bridge for the OutSystems Contacts plugin.
 ///
-/// Permission model is **implicit** (matching the Capacitor plugin and the
-/// legacy cordova-plugin-contacts): `find`, `save` and `remove` request
+/// Permission model is **implicit** (the same model as the Capacitor
+/// plugin): `find`, `save` and `remove` request
 /// Contacts access before touching the store. On iOS 18+ Limited Access
 /// counts as granted. `pickContact` presents the system picker, which
 /// requires no permission at all. Business logic lives in `Contacts`

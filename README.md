@@ -17,4 +17,3 @@ iOS 18+ **Limited Access** support, and **`ContactsContract`** on Android.
 
 See [NOTICE](NOTICE) for attribution to the Apache Cordova contacts plugin
 this project supersedes.
-# cordova-outsystems-contacts
