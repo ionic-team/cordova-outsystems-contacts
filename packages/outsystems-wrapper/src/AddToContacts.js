@@ -7,6 +7,7 @@
 
 function onSuccess(contact) {
   $parameters.Success = true;
+  $parameters.ErrorCode = '';
   $parameters.ErrorMessage = '';
   $resolve();
 }

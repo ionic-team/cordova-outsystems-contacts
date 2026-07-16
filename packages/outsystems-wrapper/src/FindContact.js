@@ -7,6 +7,7 @@
 
 function finish(contacts) {
   $parameters.Success = true;
+  $parameters.ErrorCode = '';
   $parameters.ErrorMessage = '';
   $parameters.ContactsJSON = JSON.stringify(contacts);
   $resolve();

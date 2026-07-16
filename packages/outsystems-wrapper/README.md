@@ -20,6 +20,15 @@ scripts change, copy them into the corresponding JS node in ODC Studio.
 | `PickContact.js` | `PickContact` (PickContact) | No arguments; same `ContactJSON` output on both branches. |
 | `CheckContactsPlugin.js` | `IsPluginAvailableJS` (CheckContactsPlugin) | **Must be updated**: the current node checks only `cordova`/`navigator`, so Capacitor builds would report the plugin unavailable and every action would short-circuit at the "Is Contacts Plugin available?" gate. The new check requires the actual plugin object on both shells. |
 
+The four action nodes output `ErrorCode` (Text, "Returns the plugin error
+code, if any."), populated from the rejection's `code`: `OS-PLUG-CONT-NNNN`
+from the new plugins, or the old plugin's numeric W3C code as text on the
+legacy branch. Add the output parameter to each node, and in each action's
+"Set error" Assign map `Error.ErrorCode` from it instead of a constant. The
+two flow-level failure branches keep literals, but from the unified table:
+`"OS-PLUG-CONT-0005"` when the plugin is unavailable, `"OS-PLUG-CONT-0001"`
+for the AddToContacts email-validation failure.
+
 `extensibility-configuration.json` carries **both** build sources: MABS picks
 `cordova` (cordova-outsystems-contacts) or `capacitor` (capacitor-contacts)
 per shell — pin both npm sources to released tags before shipping.
@@ -27,13 +36,6 @@ per shell — pin both npm sources to released tags before shipping.
 needed it for its `AccountManager` save path, but neither of the new plugins
 touches accounts. Create the `ContactsUsageDescription` extensibility setting
 in ODC Studio.
-
-Every action node now outputs `ErrorCode` (Text) populated from the
-rejection's `code` (`OS-PLUG-CONT-NNNN`; on the legacy fallback branch, the
-old plugin's numeric W3C code as text). Add the output parameter to each JS
-node, and replace any hardcoded error-code constants in the client action
-flows (Assigns of `"0"`/`"1"`/`"2"`/`"3"`/`"-1"` into the Error structure)
-with the node's `ErrorCode` output.
 
 Migration note: contact `id`s are the platform-native identifiers
 (`CNContact` identifiers on iOS, `ContactsContract` ids on Android). Numeric

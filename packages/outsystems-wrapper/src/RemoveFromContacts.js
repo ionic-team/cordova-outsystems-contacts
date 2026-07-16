@@ -7,6 +7,7 @@
 
 function onSuccess() {
   $parameters.Success = true;
+  $parameters.ErrorCode = '';
   $parameters.ErrorMessage = '';
   $resolve();
 }
