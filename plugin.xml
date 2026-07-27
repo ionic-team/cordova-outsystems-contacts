@@ -1,69 +1,48 @@
-<?xml version='1.0' encoding='utf-8'?>
-<plugin id="com.outsystems.plugins.contacts" version="0.0.1"
-  xmlns="http://apache.org/cordova/ns/plugins/1.0"
-  xmlns:android="http://schemas.android.com/apk/res/android">
-
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<plugin id="com.outsystems.plugins.contacts" version="1.0.0" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
   <name>OSContactsPlugin</name>
   <description>OutSystems Cordova plugin for Contacts</description>
   <license>Apache-2.0</license>
   <keywords>cordova,outsystems,contacts</keywords>
-
   <engines>
-    <engine name="cordova-android" version=">=9.0.0" />
-    <engine name="cordova-ios" version=">=6.0.0" />
+    <engine name="cordova-android" version=">=9.0.0"/>
+    <engine name="cordova-ios" version=">=6.0.0"/>
   </engines>
-
   <js-module name="Contacts" src="packages/cordova-plugin/dist/plugin.js">
-    <clobbers target="cordova.plugins.Contacts" />
+    <clobbers target="cordova.plugins.Contacts"/>
   </js-module>
-
-  <!-- android -->
   <platform name="android">
     <config-file parent="/*" target="res/xml/config.xml">
       <feature name="OSContactsPlugin">
-        <param name="android-package"
-               value="com.outsystems.plugins.contacts.OSContactsPlugin" />
+        <param name="android-package" value="com.outsystems.plugins.contacts.OSContactsPlugin"/>
       </feature>
-      <!-- Must stay inside config-file: a bare <preference> under <platform>
-           is a plugman install variable and breaks `cordova platform add`. -->
-      <preference name="GradlePluginKotlinEnabled" value="true" />
-      <preference name="GradlePluginKotlinCodeStyle" value="official" />
+      <preference name="GradlePluginKotlinEnabled" value="true"/>
+      <preference name="GradlePluginKotlinCodeStyle" value="official"/>
     </config-file>
-
     <config-file parent="/*" target="AndroidManifest.xml">
-      <uses-permission android:name="android.permission.READ_CONTACTS" />
-      <uses-permission android:name="android.permission.WRITE_CONTACTS" />
+      <uses-permission android:name="android.permission.READ_CONTACTS"/>
+      <uses-permission android:name="android.permission.WRITE_CONTACTS"/>
     </config-file>
-
-    <source-file src="packages/cordova-plugin/android/OSContactsPlugin.kt"
-      target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts" />
-    <source-file src="packages/cordova-plugin/android/Contacts.kt"
-      target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts" />
-    <source-file src="packages/cordova-plugin/android/ContactsError.kt"
-      target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts" />
+    <source-file src="packages/cordova-plugin/android/OSContactsPlugin.kt" target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts"/>
+    <source-file src="packages/cordova-plugin/android/Contacts.kt" target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts"/>
+    <source-file src="packages/cordova-plugin/android/ContactsError.kt" target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts"/>
   </platform>
-
-  <!-- ios -->
   <platform name="ios">
     <config-file parent="/*" target="config.xml">
       <feature name="OSContactsPlugin">
-        <param name="ios-package" value="OSContactsPlugin" />
+        <param name="ios-package" value="OSContactsPlugin"/>
       </feature>
-      <preference name="SwiftVersion" value="5" />
+      <preference name="SwiftVersion" value="5"/>
     </config-file>
-
-    <preference name="CONTACTS_USAGE_DESCRIPTION" default="This app needs access to your contacts to search, save and remove them." />
     <config-file target="*-Info.plist" parent="NSContactsUsageDescription">
       <string>$CONTACTS_USAGE_DESCRIPTION</string>
     </config-file>
-
-    <source-file src="packages/cordova-plugin/ios/OSContactsPlugin.swift" />
-    <source-file src="packages/cordova-plugin/ios/Contacts.swift" />
-    <source-file src="packages/cordova-plugin/ios/ContactsMapping.swift" />
-    <source-file src="packages/cordova-plugin/ios/ContactsError.swift" />
-
-    <framework src="Contacts.framework" />
-    <framework src="ContactsUI.framework" />
+    <preference name="CONTACTS_USAGE_DESCRIPTION" default="This app needs access to your contacts to search, save and remove them."/>
+    <source-file src="packages/cordova-plugin/ios/OSContactsPlugin.swift"/>
+    <source-file src="packages/cordova-plugin/ios/Contacts.swift"/>
+    <source-file src="packages/cordova-plugin/ios/ContactsMapping.swift"/>
+    <source-file src="packages/cordova-plugin/ios/ContactsError.swift"/>
+    <framework src="Contacts.framework"/>
+    <framework src="ContactsUI.framework"/>
   </platform>
-
 </plugin>

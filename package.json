@@ -1,6 +1,6 @@
 {
   "name": "com.outsystems.plugins.contacts",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "license": "Apache-2.0",
   "author": "OutSystems <support@outsystems.com>",
