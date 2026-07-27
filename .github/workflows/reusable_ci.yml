@@ -1,0 +1,57 @@
+name: (re-usable) Continuous Integration Checks
+
+on:
+  workflow_call:
+    secrets:
+      THE_GH_RELEASE_TOKEN:
+        required: false
+
+jobs:
+  build-plugin:
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.THE_GH_RELEASE_TOKEN || github.token }}
+
+      - name: 'Setup Tools'
+        uses: ./.github/actions/setup-tools
+
+      - name: 'Copy README.md with plugin API'
+        working-directory: ./packages/cordova-plugin
+        run: cp README.md README.md.original
+
+      - name: 'Build Packages'
+        working-directory: ./packages/cordova-plugin
+        run: npm run build
+
+      - name: 'Check README.md changes'
+        working-directory: ./packages/cordova-plugin
+        run: |
+          if ! cmp --silent README.md README.md.original; then
+            echo "Detected README.md changes; Do 'npm run build' in 'packages/cordova-plugin' to update the docs."
+            exit 1
+          fi
+
+  check-outsystems-wrapper:
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.THE_GH_RELEASE_TOKEN || github.token }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 'Syntax-check wrapper scripts'
+        working-directory: ./packages/outsystems-wrapper
+        run: |
+          for f in src/*.js; do
+            node --check "$f"
+          done

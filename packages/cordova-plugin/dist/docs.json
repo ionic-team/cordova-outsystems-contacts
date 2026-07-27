@@ -1,0 +1,1031 @@
+{
+  "api": {
+    "name": "IContacts",
+    "slug": "icontacts",
+    "docs": "",
+    "tags": [],
+    "methods": [
+      {
+        "name": "find",
+        "signature": "(options: ContactFindOptions, success: (result: ContactFindResult) => void, error: (error: PluginError) => void) => void",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "ContactFindOptions"
+          },
+          {
+            "name": "success",
+            "docs": "",
+            "type": "(result: ContactFindResult) => void"
+          },
+          {
+            "name": "error",
+            "docs": "",
+            "type": "(error: PluginError) => void"
+          }
+        ],
+        "returns": "void",
+        "tags": [
+          {
+            "name": "since",
+            "text": "1.0.0"
+          }
+        ],
+        "docs": "Queries the device contacts database and calls `success` with the\nmatching contacts.\n\nRequests the READ_CONTACTS (Android) / Contacts (iOS) permission\ninternally the first time it runs; there is no separate permission method.\n\n**iOS 18+:** under Limited Access the search runs against (and returns\nonly) the subset of contacts the user shared with the app.",
+        "complexTypes": [
+          "ContactFindOptions",
+          "ContactFindResult",
+          "PluginError"
+        ],
+        "slug": "find"
+      },
+      {
+        "name": "save",
+        "signature": "(options: ContactSaveOptions, success: (contact: Contact) => void, error: (error: PluginError) => void) => void",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "ContactSaveOptions"
+          },
+          {
+            "name": "success",
+            "docs": "",
+            "type": "(contact: Contact) => void"
+          },
+          {
+            "name": "error",
+            "docs": "",
+            "type": "(error: PluginError) => void"
+          }
+        ],
+        "returns": "void",
+        "tags": [
+          {
+            "name": "since",
+            "text": "1.0.0"
+          }
+        ],
+        "docs": "Persists a new contact or updates an existing one (matched by\n`contact.id`). Calls `success` with the full saved contact.\n\nRequests the READ/WRITE_CONTACTS (Android) / Contacts (iOS) permission\ninternally.\n\n**iOS 18+:** works under Limited Access — new contacts are added to the\napp's accessible set; updating requires the target contact to be in that\nset (otherwise the call fails with `OS-PLUG-CONT-0001`).",
+        "complexTypes": [
+          "ContactSaveOptions",
+          "Contact",
+          "PluginError"
+        ],
+        "slug": "save"
+      },
+      {
+        "name": "remove",
+        "signature": "(options: ContactRemoveOptions, success: () => void, error: (error: PluginError) => void) => void",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "ContactRemoveOptions"
+          },
+          {
+            "name": "success",
+            "docs": "",
+            "type": "() => void"
+          },
+          {
+            "name": "error",
+            "docs": "",
+            "type": "(error: PluginError) => void"
+          }
+        ],
+        "returns": "void",
+        "tags": [
+          {
+            "name": "since",
+            "text": "1.0.0"
+          }
+        ],
+        "docs": "Removes the contact with the given `id` from the device contacts\ndatabase. Fails with `OS-PLUG-CONT-0001` when no contact has that id (on\niOS 18+ Limited Access, also when the contact is outside the accessible\nset).\n\nRequests the READ/WRITE_CONTACTS (Android) / Contacts (iOS) permission\ninternally.",
+        "complexTypes": [
+          "ContactRemoveOptions",
+          "PluginError"
+        ],
+        "slug": "remove"
+      },
+      {
+        "name": "pickContact",
+        "signature": "(success: (contact: Contact) => void, error: (error: PluginError) => void) => void",
+        "parameters": [
+          {
+            "name": "success",
+            "docs": "",
+            "type": "(contact: Contact) => void"
+          },
+          {
+            "name": "error",
+            "docs": "",
+            "type": "(error: PluginError) => void"
+          }
+        ],
+        "returns": "void",
+        "tags": [
+          {
+            "name": "since",
+            "text": "1.0.0"
+          }
+        ],
+        "docs": "Launches the native contact picker UI and calls `success` with the\ncontact the user selects. Fails with `OS-PLUG-CONT-0006` if the user\ncancels.\n\nOn iOS the system picker requires no permission and always shows the full\ncontact list — even under iOS 18+ Limited Access (the picked contact is\nreturned without joining the app's accessible set). On Android the\nREAD_CONTACTS permission is requested internally to read the picked\ncontact's details.",
+        "complexTypes": [
+          "Contact",
+          "PluginError"
+        ],
+        "slug": "pickcontact"
+      }
+    ],
+    "properties": []
+  },
+  "interfaces": [
+    {
+      "name": "ContactFindOptions",
+      "slug": "contactfindoptions",
+      "docs": "Search options accepted by {@link IContacts.find}.",
+      "tags": [
+        {
+          "text": "1.0.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "fields",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Fields to search against. Pass `['*']` to match every field. An empty\narray is invalid and fails with `OS-PLUG-CONT-0001`. The `id` field\nmatches by exact identifier; all other fields match case-insensitive\nsubstrings. `photos` and `categories` are not searchable.",
+          "complexTypes": [
+            "ContactFieldType"
+          ],
+          "type": "ContactFieldType[]"
+        },
+        {
+          "name": "filter",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Search string matched (case-insensitively) against the selected `fields`.\nAn empty/omitted filter returns every contact.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "multiple",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "When `true`, returns every match; when `false` (default), returns at most\none contact.",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "desiredFields",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "If set, each returned {@link Contact} only includes these fields (plus the\nalways-present `id`).",
+          "complexTypes": [
+            "ContactFieldType"
+          ],
+          "type": "ContactFieldType[] | undefined"
+        },
+        {
+          "name": "hasPhoneNumber",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "OutSystems extension: when `true`, only contacts that have at least one\nphone number are returned. Defaults to `false`.",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        }
+      ]
+    },
+    {
+      "name": "ContactFindResult",
+      "slug": "contactfindresult",
+      "docs": "Result of a {@link IContacts.find} call.",
+      "tags": [
+        {
+          "text": "1.0.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "contacts",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The contacts matching the search criteria.",
+          "complexTypes": [
+            "Contact"
+          ],
+          "type": "Contact[]"
+        }
+      ]
+    },
+    {
+      "name": "Contact",
+      "slug": "contact",
+      "docs": "A single device contact.",
+      "tags": [
+        {
+          "text": "1.0.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "id",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Globally unique, platform-assigned identifier. Absent for contacts not yet\nsaved to the device.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "rawId",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Android raw-contact id backing this aggregated contact. iOS leaves this\nunset.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "displayName",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Name suitable for display to end users.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "name",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The structured name components.",
+          "complexTypes": [
+            "ContactName"
+          ],
+          "type": "ContactName"
+        },
+        {
+          "name": "nickname",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "A casual name by which to address the contact.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "phoneNumbers",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The contact's phone numbers.",
+          "complexTypes": [
+            "ContactField"
+          ],
+          "type": "ContactField[] | undefined"
+        },
+        {
+          "name": "emails",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The contact's email addresses.",
+          "complexTypes": [
+            "ContactField"
+          ],
+          "type": "ContactField[] | undefined"
+        },
+        {
+          "name": "addresses",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The contact's postal addresses.",
+          "complexTypes": [
+            "ContactAddress"
+          ],
+          "type": "ContactAddress[] | undefined"
+        },
+        {
+          "name": "ims",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The contact's instant-messaging handles.",
+          "complexTypes": [
+            "ContactField"
+          ],
+          "type": "ContactField[] | undefined"
+        },
+        {
+          "name": "organizations",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The contact's organizations.",
+          "complexTypes": [
+            "ContactOrganization"
+          ],
+          "type": "ContactOrganization[] | undefined"
+        },
+        {
+          "name": "birthday",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The contact's birthday as epoch milliseconds.",
+          "complexTypes": [],
+          "type": "number | undefined"
+        },
+        {
+          "name": "note",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "A free-form note about the contact.\n\n**iOS:** not supported by default — reading/writing a contact's note\nrequires Apple's restricted `com.apple.developer.contacts.notes`\nentitlement. Without it the field is omitted on read and ignored on save.\nAndroid has no such restriction.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "photos",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The contact's photos. Reads return `type: 'url'` with the `value`\nholding a reference to the image, never image bytes: on Android the\ncontact's `content://` photo URI, on iOS the path of a copy written to\nthe app's temporary directory (cleared by the system). On save, the first entry is\napplied: pass `type: 'base64'` with base64 data, or `type: 'url'` with a\nlocal `file://`/`content://` URI to import.",
+          "complexTypes": [
+            "ContactField"
+          ],
+          "type": "ContactField[] | undefined"
+        },
+        {
+          "name": "categories",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "User-defined categories associated with the contact. Read-only: populated\nfrom the contact's group memberships on Android, never returned on iOS\n(the Contacts framework has no equivalent), and ignored on save.",
+          "complexTypes": [
+            "ContactField"
+          ],
+          "type": "ContactField[] | undefined"
+        },
+        {
+          "name": "urls",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Web pages associated with the contact.",
+          "complexTypes": [
+            "ContactField"
+          ],
+          "type": "ContactField[] | undefined"
+        }
+      ]
+    },
+    {
+      "name": "ContactName",
+      "slug": "contactname",
+      "docs": "Structured name of a {@link Contact}.",
+      "tags": [
+        {
+          "text": "1.0.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "formatted",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The complete formatted name.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "familyName",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Family (last) name.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "givenName",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Given (first) name.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "middleName",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Middle name.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "honorificPrefix",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Honorific prefix (e.g. `Mr.`, `Dr.`).",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "honorificSuffix",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Honorific suffix (e.g. `Esq.`).",
+          "complexTypes": [],
+          "type": "string | undefined"
+        }
+      ]
+    },
+    {
+      "name": "ContactField",
+      "slug": "contactfield",
+      "docs": "A generic, repeatable contact field (phone number, email, IM, photo, URL,\ncategory).",
+      "tags": [
+        {
+          "text": "1.0.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "type",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The kind of field, e.g. `home`, `work`, `mobile`. For photos, `url` or\n`base64`.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "value",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The field value (phone number, email address, URI, etc.).",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "pref",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "`true` if this is the contact's preferred value for the field.",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "id",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Platform-assigned id of this individual field entry.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        }
+      ]
+    },
+    {
+      "name": "ContactAddress",
+      "slug": "contactaddress",
+      "docs": "A postal address of a {@link Contact}.",
+      "tags": [
+        {
+          "text": "1.0.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "id",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Platform-assigned id of this address entry.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "pref",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "`true` if this is the contact's preferred address.",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "type",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The kind of address, e.g. `home`, `work`.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "formatted",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The full address formatted for display.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "streetAddress",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The street address.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "locality",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The city or locality.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "region",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The state or region.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "postalCode",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The ZIP or postal code.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "country",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The country name.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        }
+      ]
+    },
+    {
+      "name": "ContactOrganization",
+      "slug": "contactorganization",
+      "docs": "An organization a {@link Contact} belongs to.",
+      "tags": [
+        {
+          "text": "1.0.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "id",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Platform-assigned id of this organization entry. Android only — iOS\nmodels the organization as flat contact properties without an id.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "pref",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "`true` if this is the contact's preferred organization.",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "type",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The kind of organization, e.g. `work`.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "name",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The organization name.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "department",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The department within the organization.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "title",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The contact's title at the organization.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        }
+      ]
+    },
+    {
+      "name": "PluginError",
+      "slug": "pluginerror",
+      "docs": "Error delivered to every failure callback.",
+      "tags": [
+        {
+          "text": "1.0.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "code",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Unified error code in the `OS-PLUG-CONT-NNNN` format, identical across\nthis plugin and `@capacitor/contacts`.",
+          "complexTypes": [],
+          "type": "string"
+        },
+        {
+          "name": "message",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "Human-readable description of the failure.",
+          "complexTypes": [],
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ContactSaveOptions",
+      "slug": "contactsaveoptions",
+      "docs": "Options accepted by {@link IContacts.save}.",
+      "tags": [
+        {
+          "text": "1.0.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "contact",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The contact to create (no `id`) or update (existing `id`).\n\nUpdate semantics: every field present on the contact replaces the stored\nvalue entirely (e.g. `name` replaces the whole structured name,\n`phoneNumbers` replaces all phone numbers); omitted fields are left\nunchanged.",
+          "complexTypes": [
+            "Contact"
+          ],
+          "type": "Contact"
+        }
+      ]
+    },
+    {
+      "name": "ContactRemoveOptions",
+      "slug": "contactremoveoptions",
+      "docs": "Options accepted by {@link IContacts.remove}.",
+      "tags": [
+        {
+          "text": "1.0.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "id",
+          "tags": [
+            {
+              "text": "1.0.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The native id of the contact to remove.",
+          "complexTypes": [],
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "enums": [],
+  "typeAliases": [
+    {
+      "name": "ContactFieldType",
+      "slug": "contactfieldtype",
+      "docs": "The set of contact fields a {@link IContacts.find} call can search\nagainst or request back. Mirrors the legacy Cordova `ContactFieldType`\nstring values exactly.",
+      "types": [
+        {
+          "text": "'addresses'",
+          "complexTypes": []
+        },
+        {
+          "text": "'birthday'",
+          "complexTypes": []
+        },
+        {
+          "text": "'categories'",
+          "complexTypes": []
+        },
+        {
+          "text": "'country'",
+          "complexTypes": []
+        },
+        {
+          "text": "'department'",
+          "complexTypes": []
+        },
+        {
+          "text": "'displayName'",
+          "complexTypes": []
+        },
+        {
+          "text": "'emails'",
+          "complexTypes": []
+        },
+        {
+          "text": "'familyName'",
+          "complexTypes": []
+        },
+        {
+          "text": "'formatted'",
+          "complexTypes": []
+        },
+        {
+          "text": "'givenName'",
+          "complexTypes": []
+        },
+        {
+          "text": "'honorificPrefix'",
+          "complexTypes": []
+        },
+        {
+          "text": "'honorificSuffix'",
+          "complexTypes": []
+        },
+        {
+          "text": "'id'",
+          "complexTypes": []
+        },
+        {
+          "text": "'ims'",
+          "complexTypes": []
+        },
+        {
+          "text": "'locality'",
+          "complexTypes": []
+        },
+        {
+          "text": "'middleName'",
+          "complexTypes": []
+        },
+        {
+          "text": "'name'",
+          "complexTypes": []
+        },
+        {
+          "text": "'nickname'",
+          "complexTypes": []
+        },
+        {
+          "text": "'note'",
+          "complexTypes": []
+        },
+        {
+          "text": "'organizations'",
+          "complexTypes": []
+        },
+        {
+          "text": "'phoneNumbers'",
+          "complexTypes": []
+        },
+        {
+          "text": "'photos'",
+          "complexTypes": []
+        },
+        {
+          "text": "'postalCode'",
+          "complexTypes": []
+        },
+        {
+          "text": "'region'",
+          "complexTypes": []
+        },
+        {
+          "text": "'streetAddress'",
+          "complexTypes": []
+        },
+        {
+          "text": "'title'",
+          "complexTypes": []
+        },
+        {
+          "text": "'urls'",
+          "complexTypes": []
+        }
+      ]
+    }
+  ],
+  "pluginConfigs": []
+}

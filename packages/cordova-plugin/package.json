@@ -1,0 +1,44 @@
+{
+  "name": "com.outsystems.plugins.contacts",
+  "displayName": "Contacts",
+  "version": "0.0.1",
+  "description": "OutSystems Cordova plugin for Contacts",
+  "scripts": {
+    "lint": "npm run eslint && npm run prettier -- --check",
+    "eslint": "eslint . --ext ts",
+    "prettier": "prettier \"**/*.{css,html,ts,js}\"",
+    "docgen": "docgen --api IContacts --output-readme README.md --output-json ./dist/docs.json",
+    "build": "rimraf ./dist && vite build && npm run docgen"
+  },
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-android",
+    "cordova-ios"
+  ],
+  "cordova": {
+    "id": "com.outsystems.plugins.contacts",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "author": "OutSystems <support@outsystems.com>",
+  "license": "Apache-2.0",
+  "eslintConfig": {
+    "extends": "@ionic/eslint-config/recommended"
+  },
+  "prettier": "@ionic/prettier-config",
+  "devDependencies": {
+    "@capacitor/docgen": "^0.3.1",
+    "@ionic/eslint-config": "^0.4.0",
+    "@ionic/prettier-config": "^4.0.0",
+    "@types/cordova": "^11.0.3",
+    "@types/node": "^20.17.14",
+    "eslint": "^8.57.1",
+    "prettier": "^3.6.2",
+    "rimraf": "^6.0.1",
+    "typescript": "~5.4.5",
+    "vite": "^5.2.11",
+    "vite-plugin-dts": "^3.9.1"
+  }
+}

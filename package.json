@@ -1,0 +1,26 @@
+{
+  "name": "com.outsystems.plugins.contacts",
+  "version": "0.0.1",
+  "private": true,
+  "license": "Apache-2.0",
+  "author": "OutSystems <support@outsystems.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ionic-team/cordova-outsystems-contacts.git"
+  },
+  "scripts": {
+    "i": "npm i && cd ./packages/cordova-plugin && npm i",
+    "build": "cd ./packages/cordova-plugin && npm run build"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.0",
+    "@semantic-release/npm": "^13.1.1",
+    "@types/node": "^20.14.8",
+    "semantic-release": "^25.0.1",
+    "typescript": "~5.4.5",
+    "xml2js": "^0.6.2"
+  }
+}
