@@ -32,6 +32,7 @@
       <feature name="OSContactsPlugin">
         <param name="ios-package" value="OSContactsPlugin"/>
       </feature>
+      <preference name="SwiftVersion" value="5"/>
     </config-file>
     <config-file target="*-Info.plist" parent="NSContactsUsageDescription">
       <string>$CONTACTS_USAGE_DESCRIPTION</string>
