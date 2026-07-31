@@ -102,7 +102,7 @@ extension Contacts {
 
         if wants("birthday", desired), contact.isKeyAvailable(CNContactBirthdayKey), var birthday = contact.birthday {
             if birthday.year == nil { birthday.year = 1970 }
-            if let date = Calendar.current.date(from: birthday) {
+            if let date = Foundation.Calendar.current.date(from: birthday) {
                 dict["birthday"] = date.timeIntervalSince1970 * 1000.0
             }
         }
@@ -251,7 +251,7 @@ extension Contacts {
 
         if let birthdayMs = (dict["birthday"] as? NSNumber)?.doubleValue {
             let date = Date(timeIntervalSince1970: birthdayMs / 1000.0)
-            contact.birthday = Calendar.current.dateComponents([.year, .month, .day], from: date)
+            contact.birthday = Foundation.Calendar.current.dateComponents([.year, .month, .day], from: date)
         }
 
         if let photos = dict["photos"] as? [[String: Any]], let photo = photos.first,
