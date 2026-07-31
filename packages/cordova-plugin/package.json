@@ -1,7 +1,7 @@
 {
   "name": "com.outsystems.plugins.contacts",
   "displayName": "Contacts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OutSystems Cordova plugin for Contacts",
   "scripts": {
     "lint": "npm run eslint && npm run prettier -- --check",
