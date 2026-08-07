@@ -11,7 +11,7 @@ jobs:
     runs-on: 'ubuntu-latest'
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.THE_GH_RELEASE_TOKEN || github.token }}
@@ -39,15 +39,15 @@ jobs:
     runs-on: 'ubuntu-latest'
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.THE_GH_RELEASE_TOKEN || github.token }}
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
 
       - name: 'Syntax-check wrapper scripts'
         working-directory: ./packages/outsystems-wrapper
