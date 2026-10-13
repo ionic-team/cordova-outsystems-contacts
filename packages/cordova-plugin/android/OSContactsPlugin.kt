@@ -3,7 +3,10 @@ package com.outsystems.plugins.contacts
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import android.provider.ContactsContract
+import android.os.Build
+import android.provider.ContactsContract.CommonDataKinds.Email
+import android.provider.ContactsContract.CommonDataKinds.Phone
+import android.provider.ContactsPickerSessionContract
 import org.apache.cordova.CallbackContext
 import org.apache.cordova.CordovaPlugin
 import org.apache.cordova.PermissionHelper
@@ -16,9 +19,21 @@ import org.json.JSONObject
  * Permission model is **implicit** (the same model as the Capacitor
  * plugin): there are no checkPermissions /
  * requestPermissions actions. Each action ensures the permission it needs
- * before touching the provider — READ_CONTACTS for `find`/`pickContact`,
- * READ+WRITE for `save`/`remove`. Provider work runs on the Cordova thread
- * pool; the picker runs via startActivityForResult.
+ * before touching the provider — READ+WRITE for `save`/`remove`, READ for
+ * `find`. `pickContact` needs no permission at all on any API level:
+ * - API 37+ (CINNAMON_BUN) uses the Contacts Picker
+ *   (ContactsPickerSessionContract.ACTION_PICK_CONTACTS), which grants a
+ *   temporary, app-scoped read session over the requested fields (phone +
+ *   email here).
+ * - Below API 37, it falls back to a legacy `ACTION_PICK` on
+ *   [Phone.CONTENT_URI] rather than the generic `Contacts.CONTENT_URI`:
+ *   picking a specific data-kind URI makes the device's contacts app
+ *   delegate temporary read permission on just the selected phone row, a
+ *   permission-free mechanism documented since Android 2.3. The tradeoff is
+ *   that only one data kind can be picked per call, so the legacy path
+ *   returns phone numbers only (no email).
+ * Provider work runs on the Cordova thread pool; the picker runs via
+ * startActivityForResult.
  */
 class OSContactsPlugin : CordovaPlugin() {
 
@@ -53,10 +68,14 @@ class OSContactsPlugin : CordovaPlugin() {
         callbackContext: CallbackContext
     ): Boolean {
         return when (action) {
-            "find", "save", "remove", "pickContact" -> {
+            "find", "save", "remove" -> {
                 if (validate(action, args, callbackContext)) {
                     ensurePermission(action, args, callbackContext)
                 }
+                true
+            }
+            "pickContact" -> {
+                dispatch(action, args, callbackContext)
                 true
             }
             else -> false
@@ -196,13 +215,32 @@ class OSContactsPlugin : CordovaPlugin() {
         }
     }
 
+    /** MIME types the picker is allowed to hand back for a selected contact. */
+    private val pickerRequestedFields = arrayListOf(
+        Phone.CONTENT_ITEM_TYPE,
+        Email.CONTENT_ITEM_TYPE
+    )
+
+    private fun usesContactsPickerContract(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN // API 37
+
     private fun pickContact(callbackContext: CallbackContext) {
         if (pickCallback != null) {
             error(callbackContext, ContactsError.PENDING_OPERATION)
             return
         }
         pickCallback = callbackContext
-        val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
+        val intent = if (usesContactsPickerContract()) {
+            Intent(ContactsPickerSessionContract.ACTION_PICK_CONTACTS).apply {
+                putExtra(Intent.EXTRA_USE_SYSTEM_CONTACTS_PICKER, true)
+                putStringArrayListExtra(
+                    ContactsPickerSessionContract.EXTRA_PICK_CONTACTS_REQUESTED_DATA_FIELDS,
+                    pickerRequestedFields
+                )
+            }
+        } else {
+            Intent(Intent.ACTION_PICK, Phone.CONTENT_URI)
+        }
         try {
             cordova.startActivityForResult(this, intent, PICK_CONTACT_REQ_CODE)
         } catch (e: Exception) {
@@ -218,14 +256,19 @@ class OSContactsPlugin : CordovaPlugin() {
         pickCallback = null
         when (resultCode) {
             Activity.RESULT_OK -> {
-                val contactId = intent?.data?.lastPathSegment
-                if (contactId == null) {
+                val resultUri = intent?.data
+                if (resultUri == null) {
                     error(callback, ContactsError.UNKNOWN)
                     return
                 }
+                val usesPickerContract = usesContactsPickerContract()
                 cordova.threadPool.execute {
                     try {
-                        val contact = implementation.getContactById(contactId)
+                        val contact = if (usesPickerContract) {
+                            implementation.readPickerSession(resultUri)
+                        } else {
+                            implementation.readPickedPhone(resultUri)
+                        }
                         if (contact != null) callback.success(contact) else error(callback, ContactsError.UNKNOWN)
                     } catch (e: Exception) {
                         error(callback, ContactsError.UNKNOWN)

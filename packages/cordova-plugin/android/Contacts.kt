@@ -219,6 +219,96 @@ class Contacts(private val context: Context) {
         return null
     }
 
+    /**
+     * Reads the single phone row returned by a legacy `ACTION_PICK` on
+     * [Phone.CONTENT_URI] (used below API 37, where the Contacts Picker
+     * session contract doesn't exist). Picking a specific data-kind URI
+     * instead of the generic `Contacts.CONTENT_URI` makes the device's
+     * contacts app delegate temporary read permission on just that row, so
+     * no READ_CONTACTS permission is needed — this has been documented,
+     * permission-free behavior since Android 2.3.
+     */
+    fun readPickedPhone(phoneUri: Uri): JSONObject? {
+        val projection = arrayOf(
+            Phone.LOOKUP_KEY,
+            Phone.DISPLAY_NAME_PRIMARY,
+            Phone.NUMBER,
+            Phone.TYPE,
+            Phone.LABEL
+        )
+        context.contentResolver.query(phoneUri, projection, null, null, null)?.use { cursor ->
+            if (!cursor.moveToFirst()) return null
+            fun idx(name: String) = cursor.getColumnIndex(name)
+            fun str(name: String): String? { val i = idx(name); return if (i >= 0) cursor.getString(i) else null }
+            fun int(name: String): Int { val i = idx(name); return if (i >= 0) cursor.getInt(i) else -1 }
+
+            val number = str(Phone.NUMBER) ?: return null
+            val lookupKey = str(Phone.LOOKUP_KEY) ?: return null
+
+            val contact = JSONObject()
+            contact.put("id", lookupKey)
+            str(Phone.DISPLAY_NAME_PRIMARY)?.let { contact.put("displayName", it) }
+            val phones = JSONArray()
+            phones.put(field(null, number, phoneLabel(int(Phone.TYPE), str(Phone.LABEL)), false))
+            contact.put("phoneNumbers", phones)
+            return contact
+        }
+        return null
+    }
+
+    /**
+     * Reads the contact exposed by an Android 17+ Contacts Picker session
+     * URI. Unlike [getContactById], this needs no READ_CONTACTS permission:
+     * the session only exposes the data fields requested in the picker
+     * intent, keyed by [ContactsContract.Contacts.LOOKUP_KEY] rather than a
+     * stable contact id (the real id is never shared with the app).
+     */
+    fun readPickerSession(sessionUri: Uri): JSONObject? {
+        val projection = arrayOf(
+            ContactsContract.Contacts.LOOKUP_KEY,
+            ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
+            Data.MIMETYPE,
+            Data.DATA1,
+            Data.DATA2
+        )
+
+        var lookupKey: String? = null
+        var displayName: String? = null
+        val phones = JSONArray()
+        val emails = JSONArray()
+
+        context.contentResolver.query(sessionUri, projection, null, null, null)?.use { cursor ->
+            val lookupIdx = cursor.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY)
+            val nameIdx = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY)
+            val mimeIdx = cursor.getColumnIndex(Data.MIMETYPE)
+            val data1Idx = cursor.getColumnIndex(Data.DATA1)
+            val data2Idx = cursor.getColumnIndex(Data.DATA2)
+
+            while (cursor.moveToNext()) {
+                if (lookupKey == null && lookupIdx >= 0) lookupKey = cursor.getString(lookupIdx)
+                if (displayName == null && nameIdx >= 0) displayName = cursor.getString(nameIdx)
+
+                val mime = if (mimeIdx >= 0) cursor.getString(mimeIdx) else null
+                val value = if (data1Idx >= 0) cursor.getString(data1Idx) else null
+                if (value.isNullOrEmpty()) continue
+                val type = if (data2Idx >= 0) cursor.getInt(data2Idx) else -1
+
+                when (mime) {
+                    Phone.CONTENT_ITEM_TYPE -> phones.put(field(null, value, phoneLabel(type, null), false))
+                    Email.CONTENT_ITEM_TYPE -> emails.put(field(null, value, emailLabel(type, null), false))
+                }
+            }
+        }
+
+        val key = lookupKey ?: return null
+        val contact = JSONObject()
+        contact.put("id", key)
+        displayName?.let { contact.put("displayName", it) }
+        if (phones.length() > 0) contact.put("phoneNumbers", phones)
+        if (emails.length() > 0) contact.put("emails", emails)
+        return contact
+    }
+
     private fun wants(field: String, desiredFields: Set<String>): Boolean =
         desiredFields.isEmpty() || desiredFields.contains(field)
 
