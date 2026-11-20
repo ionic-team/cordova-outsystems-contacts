@@ -137,6 +137,41 @@
           "PluginError"
         ],
         "slug": "pickcontact"
+      },
+      {
+        "name": "pickContactField",
+        "signature": "(options: PickContactFieldOptions, success: (picked: PickedContactField) => void, error: (error: PluginError) => void) => void",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "PickContactFieldOptions"
+          },
+          {
+            "name": "success",
+            "docs": "",
+            "type": "(picked: PickedContactField) => void"
+          },
+          {
+            "name": "error",
+            "docs": "",
+            "type": "(error: PluginError) => void"
+          }
+        ],
+        "returns": "void",
+        "tags": [
+          {
+            "name": "since",
+            "text": "1.1.0"
+          }
+        ],
+        "docs": "Launches the native contact picker UI, showing only the requested kind of\ninformation, and calls `success` with the single value the user selects\n(not a full contact). Fails with `OS-PLUG-CONT-0006` if the user cancels.\n\nNeeds no contacts permission on either platform, which lets Android apps\nomit READ_CONTACTS from their manifest. Only one data kind can be picked\nper call.",
+        "complexTypes": [
+          "PickContactFieldOptions",
+          "PickedContactField",
+          "PluginError"
+        ],
+        "slug": "pickcontactfield"
       }
     ],
     "properties": []
@@ -905,6 +940,182 @@
           "docs": "The native id of the contact to remove.",
           "complexTypes": [],
           "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "PickContactFieldOptions",
+      "slug": "pickcontactfieldoptions",
+      "docs": "Options accepted by {@link IContacts.pickContactField}.",
+      "tags": [
+        {
+          "text": "1.1.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "field",
+          "tags": [
+            {
+              "text": "1.1.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The single kind of contact information to pick. Any other value fails with `OS-PLUG-CONT-0001`.",
+          "complexTypes": [],
+          "type": "'phone' | 'email' | 'address'"
+        }
+      ]
+    },
+    {
+      "name": "PickedContactField",
+      "slug": "pickedcontactfield",
+      "docs": "The value the user picked with {@link IContacts.pickContactField}. This is\nnot a full contact: it holds only the picked value, its label and the\ncontact's display name.",
+      "tags": [
+        {
+          "text": "1.1.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "field",
+          "tags": [
+            {
+              "text": "1.1.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The kind of value that was picked, as requested.",
+          "complexTypes": [],
+          "type": "'phone' | 'email' | 'address'"
+        },
+        {
+          "name": "value",
+          "tags": [
+            {
+              "text": "1.1.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The picked phone number, email address, or postal address formatted for\ndisplay, depending on `field`.",
+          "complexTypes": [],
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "tags": [
+            {
+              "text": "1.1.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The label of the picked value, e.g. `mobile`, `home`, `work`.",
+          "complexTypes": [],
+          "type": "string"
+        },
+        {
+          "name": "displayName",
+          "tags": [
+            {
+              "text": "1.1.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The display name of the contact the value belongs to, when available.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "address",
+          "tags": [
+            {
+              "text": "1.1.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The parts of the postal address. Only present when `field` is `address`.",
+          "complexTypes": [
+            "PickedContactAddress"
+          ],
+          "type": "PickedContactAddress"
+        }
+      ]
+    },
+    {
+      "name": "PickedContactAddress",
+      "slug": "pickedcontactaddress",
+      "docs": "The parts of a postal address returned by {@link IContacts.pickContactField}.",
+      "tags": [
+        {
+          "text": "1.1.0",
+          "name": "since"
+        }
+      ],
+      "methods": [],
+      "properties": [
+        {
+          "name": "streetAddress",
+          "tags": [
+            {
+              "text": "1.1.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The street address.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "locality",
+          "tags": [
+            {
+              "text": "1.1.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The city or locality.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "region",
+          "tags": [
+            {
+              "text": "1.1.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The state or region.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "postalCode",
+          "tags": [
+            {
+              "text": "1.1.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The postal code.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "country",
+          "tags": [
+            {
+              "text": "1.1.0",
+              "name": "since"
+            }
+          ],
+          "docs": "The country.",
+          "complexTypes": [],
+          "type": "string | undefined"
         }
       ]
     }

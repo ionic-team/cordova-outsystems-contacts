@@ -26,6 +26,7 @@
     <source-file src="packages/cordova-plugin/android/OSContactsPlugin.kt" target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts"/>
     <source-file src="packages/cordova-plugin/android/Contacts.kt" target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts"/>
     <source-file src="packages/cordova-plugin/android/ContactsError.kt" target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts"/>
+    <source-file src="packages/cordova-plugin/android/ContactPickableField.kt" target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts"/>
   </platform>
   <platform name="ios">
     <config-file parent="/*" target="config.xml">

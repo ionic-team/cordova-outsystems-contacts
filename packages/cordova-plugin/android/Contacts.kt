@@ -220,93 +220,68 @@ class Contacts(private val context: Context) {
     }
 
     /**
-     * Reads the single phone row returned by a legacy `ACTION_PICK` on
-     * [Phone.CONTENT_URI] (used below API 37, where the Contacts Picker
-     * session contract doesn't exist). Picking a specific data-kind URI
-     * instead of the generic `Contacts.CONTENT_URI` makes the device's
-     * contacts app delegate temporary read permission on just that row, so
-     * no READ_CONTACTS permission is needed — this has been documented,
-     * permission-free behavior since Android 2.3.
+     * Reads the single data row returned by an `ACTION_PICK` on [kind]'s
+     * data-kind URI into a `pickContactField` result: the picked `value` and
+     * its `type` label, plus the contact's `displayName` when available.
+     * Picking a specific data-kind URI instead of the generic
+     * `Contacts.CONTENT_URI` makes the device's contacts app delegate
+     * temporary read permission on just that row, so no READ_CONTACTS
+     * permission is needed.
+     *
+     * @param kind the data kind that was requested from the picker.
+     * @param pickedUri the URI of the row the contacts app returned.
+     * @return the result with `field`, `value`, `type`, `displayName` (when
+     * known) and, for addresses, `address`; null if the row is gone or holds
+     * no value.
+     * @throws SecurityException if the provider refuses to read the row.
      */
-    fun readPickedPhone(phoneUri: Uri): JSONObject? {
-        val projection = arrayOf(
-            Phone.LOOKUP_KEY,
-            Phone.DISPLAY_NAME_PRIMARY,
-            Phone.NUMBER,
-            Phone.TYPE,
-            Phone.LABEL
-        )
-        context.contentResolver.query(phoneUri, projection, null, null, null)?.use { cursor ->
-            if (!cursor.moveToFirst()) return null
-            fun idx(name: String) = cursor.getColumnIndex(name)
-            fun str(name: String): String? { val i = idx(name); return if (i >= 0) cursor.getString(i) else null }
-            fun int(name: String): Int { val i = idx(name); return if (i >= 0) cursor.getInt(i) else -1 }
-
-            val number = str(Phone.NUMBER) ?: return null
-            val lookupKey = str(Phone.LOOKUP_KEY) ?: return null
-
-            val contact = JSONObject()
-            contact.put("id", lookupKey)
-            str(Phone.DISPLAY_NAME_PRIMARY)?.let { contact.put("displayName", it) }
-            val phones = JSONArray()
-            phones.put(field(null, number, phoneLabel(int(Phone.TYPE), str(Phone.LABEL)), false))
-            contact.put("phoneNumbers", phones)
-            return contact
+    fun readPickedField(kind: ContactPickableField, pickedUri: Uri): JSONObject? {
+        val projection = arrayOf(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY) + when (kind) {
+            ContactPickableField.PHONE -> arrayOf(Phone.NUMBER, Phone.TYPE, Phone.LABEL)
+            ContactPickableField.EMAIL -> arrayOf(Email.ADDRESS, Email.TYPE, Email.LABEL)
+            ContactPickableField.ADDRESS -> arrayOf(
+                StructuredPostal.FORMATTED_ADDRESS, StructuredPostal.STREET, StructuredPostal.CITY,
+                StructuredPostal.REGION, StructuredPostal.POSTCODE, StructuredPostal.COUNTRY,
+                StructuredPostal.TYPE, StructuredPostal.LABEL
+            )
         }
-        return null
-    }
 
-    /**
-     * Reads the contact exposed by an Android 17+ Contacts Picker session
-     * URI. Unlike [getContactById], this needs no READ_CONTACTS permission:
-     * the session only exposes the data fields requested in the picker
-     * intent, keyed by [ContactsContract.Contacts.LOOKUP_KEY] rather than a
-     * stable contact id (the real id is never shared with the app).
-     */
-    fun readPickerSession(sessionUri: Uri): JSONObject? {
-        val projection = arrayOf(
-            ContactsContract.Contacts.LOOKUP_KEY,
-            ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
-            Data.MIMETYPE,
-            Data.DATA1,
-            Data.DATA2
-        )
+        context.contentResolver.query(pickedUri, projection, null, null, null)?.use { cursor ->
+            if (!cursor.moveToFirst()) return null
+            fun str(name: String): String? {
+                val i = cursor.getColumnIndex(name)
+                return if (i >= 0) cursor.getString(i) else null
+            }
+            fun int(name: String): Int {
+                val i = cursor.getColumnIndex(name)
+                return if (i >= 0) cursor.getInt(i) else -1
+            }
 
-        var lookupKey: String? = null
-        var displayName: String? = null
-        val phones = JSONArray()
-        val emails = JSONArray()
+            val result = JSONObject()
+            result.put("field", kind.key)
+            when (kind) {
+                ContactPickableField.PHONE -> {
+                    result.put("value", str(Phone.NUMBER) ?: return null)
+                    result.put("type", phoneLabel(int(Phone.TYPE), str(Phone.LABEL)))
+                }
 
-        context.contentResolver.query(sessionUri, projection, null, null, null)?.use { cursor ->
-            val lookupIdx = cursor.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY)
-            val nameIdx = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY)
-            val mimeIdx = cursor.getColumnIndex(Data.MIMETYPE)
-            val data1Idx = cursor.getColumnIndex(Data.DATA1)
-            val data2Idx = cursor.getColumnIndex(Data.DATA2)
+                ContactPickableField.EMAIL -> {
+                    result.put("value", str(Email.ADDRESS) ?: return null)
+                    result.put("type", emailLabel(int(Email.TYPE), str(Email.LABEL)))
+                }
 
-            while (cursor.moveToNext()) {
-                if (lookupKey == null && lookupIdx >= 0) lookupKey = cursor.getString(lookupIdx)
-                if (displayName == null && nameIdx >= 0) displayName = cursor.getString(nameIdx)
-
-                val mime = if (mimeIdx >= 0) cursor.getString(mimeIdx) else null
-                val value = if (data1Idx >= 0) cursor.getString(data1Idx) else null
-                if (value.isNullOrEmpty()) continue
-                val type = if (data2Idx >= 0) cursor.getInt(data2Idx) else -1
-
-                when (mime) {
-                    Phone.CONTENT_ITEM_TYPE -> phones.put(field(null, value, phoneLabel(type, null), false))
-                    Email.CONTENT_ITEM_TYPE -> emails.put(field(null, value, emailLabel(type, null), false))
+                ContactPickableField.ADDRESS -> {
+                    result.put("value", str(StructuredPostal.FORMATTED_ADDRESS) ?: return null)
+                    result.put("type", addressLabel(int(StructuredPostal.TYPE), str(StructuredPostal.LABEL)))
+                    val address = JSONObject()
+                    putAddressParts(address, ::str)
+                    result.put("address", address)
                 }
             }
+            str(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY)?.let { result.put("displayName", it) }
+            return result
         }
-
-        val key = lookupKey ?: return null
-        val contact = JSONObject()
-        contact.put("id", key)
-        displayName?.let { contact.put("displayName", it) }
-        if (phones.length() > 0) contact.put("phoneNumbers", phones)
-        if (emails.length() > 0) contact.put("emails", emails)
-        return contact
+        return null
     }
 
     private fun wants(field: String, desiredFields: Set<String>): Boolean =
@@ -396,11 +371,7 @@ class Contacts(private val context: Context) {
                         address.put("pref", pref)
                         address.put("type", addressLabel(int(StructuredPostal.TYPE), str(StructuredPostal.LABEL)))
                         address.put("formatted", str(StructuredPostal.FORMATTED_ADDRESS))
-                        address.put("streetAddress", str(StructuredPostal.STREET))
-                        address.put("locality", str(StructuredPostal.CITY))
-                        address.put("region", str(StructuredPostal.REGION))
-                        address.put("postalCode", str(StructuredPostal.POSTCODE))
-                        address.put("country", str(StructuredPostal.COUNTRY))
+                        putAddressParts(address, ::str)
                         addresses.put(address)
                     }
 
@@ -488,6 +459,21 @@ class Contacts(private val context: Context) {
             if (!desiredFields.contains("birthday")) contact.remove("birthday")
         }
         return contact
+    }
+
+    /**
+     * Puts the postal parts of a StructuredPostal row into [address].
+     *
+     * @param address the object to fill with `streetAddress`, `locality`,
+     * `region`, `postalCode` and `country`.
+     * @param str reads a column of the current row, null when it has no value.
+     */
+    private fun putAddressParts(address: JSONObject, str: (String) -> String?) {
+        address.put("streetAddress", str(StructuredPostal.STREET))
+        address.put("locality", str(StructuredPostal.CITY))
+        address.put("region", str(StructuredPostal.REGION))
+        address.put("postalCode", str(StructuredPostal.POSTCODE))
+        address.put("country", str(StructuredPostal.COUNTRY))
     }
 
     private fun field(id: String?, value: String?, type: String?, pref: Boolean): JSONObject {

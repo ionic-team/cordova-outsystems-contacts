@@ -13,9 +13,13 @@ function remove(options, success, error) {
 function pickContact(success, error) {
   exec(success, error, "OSContactsPlugin", "pickContact", []);
 }
+function pickContactField(options, success, error) {
+  exec(success, error, "OSContactsPlugin", "pickContactField", [options]);
+}
 module.exports = {
   find,
   save,
   remove,
-  pickContact
+  pickContact,
+  pickContactField
 };
