@@ -1,0 +1,52 @@
+{
+    "variables": {
+        "CONTACTS_PERMISSION_TYPE": {
+            "type": "string",
+            "default": "ReadWrite"
+        }
+    },
+    "platforms": {
+        "android": {
+            "manifest": [
+                {
+                    "file": "AndroidManifest.xml",
+                    "condition": "ne($CONTACTS_PERMISSION_TYPE, ReadWrite)",
+                    "target": "manifest",
+                    "attrs": {
+                        "xmlns:tools": "http://schemas.android.com/tools"
+                    }
+                },
+                {
+                    "file": "AndroidManifest.xml",
+                    "condition": "ne($CONTACTS_PERMISSION_TYPE, None)",
+                    "target": "manifest",
+                    "merge": "<manifest>\n  <uses-permission android:name=\"android.permission.READ_CONTACTS\" />\n</manifest>"
+                },
+                {
+                    "file": "AndroidManifest.xml",
+                    "condition": "eq($CONTACTS_PERMISSION_TYPE, ReadWrite)",
+                    "target": "manifest",
+                    "merge": "<manifest>\n  <uses-permission android:name=\"android.permission.WRITE_CONTACTS\" />\n</manifest>"
+                },
+                {
+                    "file": "AndroidManifest.xml",
+                    "condition": "eq($CONTACTS_PERMISSION_TYPE, None)",
+                    "target": "manifest",
+                    "merge": "<manifest>\n  <uses-permission android:name=\"android.permission.READ_CONTACTS\" tools:node=\"remove\" />\n</manifest>"
+                },
+                {
+                    "file": "AndroidManifest.xml",
+                    "condition": "eq($CONTACTS_PERMISSION_TYPE, Read)",
+                    "target": "manifest",
+                    "merge": "<manifest>\n  <uses-permission android:name=\"android.permission.WRITE_CONTACTS\" tools:node=\"remove\" />\n</manifest>"
+                },
+                {
+                    "file": "AndroidManifest.xml",
+                    "condition": "eq($CONTACTS_PERMISSION_TYPE, None)",
+                    "target": "manifest",
+                    "merge": "<manifest>\n  <uses-permission android:name=\"android.permission.WRITE_CONTACTS\" tools:node=\"remove\" />\n</manifest>"
+                }
+            ]
+        }
+    }
+}
