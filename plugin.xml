@@ -19,10 +19,8 @@
       <preference name="GradlePluginKotlinEnabled" value="true"/>
       <preference name="GradlePluginKotlinCodeStyle" value="official"/>
     </config-file>
-    <config-file parent="/*" target="AndroidManifest.xml">
-      <uses-permission android:name="android.permission.READ_CONTACTS"/>
-      <uses-permission android:name="android.permission.WRITE_CONTACTS"/>
-    </config-file>
+    <preference name="CONTACTS_PERMISSION_TYPE" default="ReadWrite"/>
+    <hook type="after_prepare" src="hooks/androidContactsPermissions.js"/>
     <source-file src="packages/cordova-plugin/android/OSContactsPlugin.kt" target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts"/>
     <source-file src="packages/cordova-plugin/android/Contacts.kt" target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts"/>
     <source-file src="packages/cordova-plugin/android/ContactsError.kt" target-dir="app/src/main/kotlin/com/outsystems/plugins/contacts"/>
