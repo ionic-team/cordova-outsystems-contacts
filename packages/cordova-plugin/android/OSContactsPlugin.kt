@@ -3,7 +3,9 @@ package com.outsystems.plugins.contacts
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.provider.ContactsContract
+import android.util.Log
 import org.apache.cordova.CallbackContext
 import org.apache.cordova.CordovaPlugin
 import org.apache.cordova.PermissionHelper
@@ -49,6 +51,7 @@ class OSContactsPlugin : CordovaPlugin() {
     )
 
     companion object {
+        private const val LOG_TAG = "OSContactsPlugin"
         private const val PERMISSION_REQ_CODE = 100
         private const val PICK_CONTACT_REQ_CODE = 200
         private val READ = arrayOf(Manifest.permission.READ_CONTACTS)
@@ -107,6 +110,10 @@ class OSContactsPlugin : CordovaPlugin() {
     @Synchronized
     private fun ensurePermission(action: String, args: JSONArray, callbackContext: CallbackContext) {
         val needed = permissionsFor(action)
+        if (!getManifestPermissions().containsAll(needed.toList())) {
+            error(callbackContext, ContactsError.PERMISSION_NOT_DECLARED)
+            return
+        }
         if (needed.all { PermissionHelper.hasPermission(this, it) }) {
             dispatch(action, args, callbackContext)
         } else {
@@ -114,6 +121,21 @@ class OSContactsPlugin : CordovaPlugin() {
             if (pendingPermission.size == 1) {
                 PermissionHelper.requestPermissions(this, PERMISSION_REQ_CODE, needed)
             }
+        }
+    }
+
+    /**
+     * Returns the set of permissions declared in the app's manifest.
+     */
+    private fun getManifestPermissions(): Set<String> {
+        return try {
+            val packageInfo = cordova.activity.packageManager.getPackageInfo(
+                cordova.activity.packageName, PackageManager.GET_PERMISSIONS
+            )
+            (packageInfo.requestedPermissions ?: emptyArray()).toHashSet()
+        } catch (e: Exception) {
+            Log.d(LOG_TAG, e.message.toString())
+            emptySet()
         }
     }
 
