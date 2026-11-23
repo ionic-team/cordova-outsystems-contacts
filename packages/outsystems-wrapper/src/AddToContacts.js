@@ -15,7 +15,7 @@ function onSuccess(contact) {
 function onError(contactError) {
   $parameters.Success = false;
   $parameters.ErrorCode = contactError && contactError.code != null ? String(contactError.code) : '';
-  $parameters.ErrorMessage = 'Could not save contact';
+  $parameters.ErrorMessage = contactError && contactError.message ? contactError.message : 'Could not save contact';
   $resolve();
 }
 
