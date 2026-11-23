@@ -10,7 +10,7 @@
             "manifest": [
                 {
                     "file": "AndroidManifest.xml",
-                    "condition": "ne($CONTACTS_PERMISSION_TYPE, ReadWrite)",
+                    "condition": "eq($CONTACTS_PERMISSION_TYPE, Read)",
                     "target": "manifest",
                     "attrs": {
                         "xmlns:tools": "http://schemas.android.com/tools"
@@ -18,7 +18,21 @@
                 },
                 {
                     "file": "AndroidManifest.xml",
-                    "condition": "ne($CONTACTS_PERMISSION_TYPE, None)",
+                    "condition": "eq($CONTACTS_PERMISSION_TYPE, None)",
+                    "target": "manifest",
+                    "attrs": {
+                        "xmlns:tools": "http://schemas.android.com/tools"
+                    }
+                },
+                {
+                    "file": "AndroidManifest.xml",
+                    "condition": "eq($CONTACTS_PERMISSION_TYPE, ReadWrite)",
+                    "target": "manifest",
+                    "merge": "<manifest>\n  <uses-permission android:name=\"android.permission.READ_CONTACTS\" />\n</manifest>"
+                },
+                {
+                    "file": "AndroidManifest.xml",
+                    "condition": "eq($CONTACTS_PERMISSION_TYPE, Read)",
                     "target": "manifest",
                     "merge": "<manifest>\n  <uses-permission android:name=\"android.permission.READ_CONTACTS\" />\n</manifest>"
                 },

@@ -8,8 +8,8 @@
 
 | Action | Purpose |
 |--------|---------|
-| `manifest` attrs | Declares the `tools` namespace on the manifest root, only when a permission is being removed |
-| `manifest` merge | Declares `READ_CONTACTS` explicitly unless `CONTACTS_PERMISSION_TYPE` is `None` |
+| `manifest` attrs | Declares the `tools` namespace on the manifest root, only when a permission is being removed (`Read` or `None`) |
+| `manifest` merge | Declares `READ_CONTACTS` explicitly when `CONTACTS_PERMISSION_TYPE` is `ReadWrite` or `Read` |
 | `manifest` merge | Declares `WRITE_CONTACTS` explicitly when `CONTACTS_PERMISSION_TYPE` is `ReadWrite` |
 | `manifest` merge | Marks `READ_CONTACTS` with `tools:node="remove"` when `CONTACTS_PERMISSION_TYPE` is `None` |
 | `manifest` merge | Marks `WRITE_CONTACTS` with `tools:node="remove"` when `CONTACTS_PERMISSION_TYPE` is `Read` or `None` |
@@ -23,6 +23,8 @@ The permissions are added to the app's manifest even though the Capacitor plugin
 | `None` | removed | removed |
 
 With `None`, only `pickContactField` works. The other methods reject with `OS-PLUG-CONT-0021`. With `Read`, only `save` and `remove` reject with `OS-PLUG-CONT-0021`.
+
+Every condition uses `eq` on purpose. The build action validator splits a condition at every occurrence of its operator text, so `ne(...)` fails whenever an argument contains `ne`, such as the value `None`.
 
 ## Variables
 
