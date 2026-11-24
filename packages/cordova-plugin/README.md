@@ -51,6 +51,13 @@ Contacts.save(
 Contacts.save({ contact: { id: someId, nickname: 'Countess' } }, ok, fail);
 Contacts.pickContact(function (picked) { console.log(picked); }, fail);
 Contacts.remove({ id: someId }, ok, fail);
+
+// Pick a single phone number, email or address; needs no contacts permission
+Contacts.pickContactField(
+  { field: 'phone' },
+  function (picked) { console.log(picked.value, picked.type, picked.displayName); },
+  fail
+);
 ```
 
 ## Permission model
@@ -59,7 +66,9 @@ Permissions are requested **implicitly** by each method (no
 checkPermissions/requestPermissions actions): read for `find`/`pickContact`,
 read + write for `save`/`remove` on Android; Contacts access on iOS (where
 `pickContact` uses the permissionless system picker). Denials fail with
-`OS-PLUG-CONT-0020`.
+`OS-PLUG-CONT-0020`. `pickContactField` needs no permission on either
+platform. On Android, the other methods fail with `OS-PLUG-CONT-0021` when
+the permissions they need are not declared in the app's manifest.
 
 ## Errors
 
@@ -73,6 +82,8 @@ read + write for `save`/`remove` on Android; Contacts access on iOS (where
 | `OS-PLUG-CONT-0005` | Not supported |
 | `OS-PLUG-CONT-0006` | Operation cancelled (picker closed) |
 | `OS-PLUG-CONT-0020` | Permission denied |
+| `OS-PLUG-CONT-0021` | Required permission not declared in the Android manifest |
+| `OS-PLUG-CONT-0022` | The picked contact has no value of the requested kind. OutSystems only: returned by the OutSystems wrapper when it falls back to `pickContact` for `pickContactField`, never by this plugin |
 
 ## iOS notes
 
@@ -84,6 +95,41 @@ read + write for `save`/`remove` on Android; Contacts access on iOS (where
   ignored on save.
 - Contact `id`s are opaque `CNContact` identifiers; numeric ids persisted by
   the legacy AddressBook-based plugin do not resolve after migration.
+
+## Android notes
+
+`pickContactField` needs no permission: it opens the contacts app on a single
+data kind (phone, email or address), and the app grants temporary read access
+to just the row the user selects.
+
+The plugin adds `READ_CONTACTS` and `WRITE_CONTACTS` to the app's manifest
+with an `after_prepare` hook, based on the `CONTACTS_PERMISSION_TYPE`
+preference, which you can set for the Android platform in `config.xml`:
+
+```xml
+<platform name="android">
+    <preference name="CONTACTS_PERMISSION_TYPE" value="None" />
+</platform>
+```
+
+| `CONTACTS_PERMISSION_TYPE` | `READ_CONTACTS` | `WRITE_CONTACTS` |
+| --- | --- | --- |
+| `ReadWrite` (default) | declared | declared |
+| `Read` | declared | not declared |
+| `None` | not declared | not declared |
+
+Values are case-sensitive; an unset or unrecognised value is treated as
+`ReadWrite`. With `None`, only `pickContactField` works, and the other methods
+fail with `OS-PLUG-CONT-0021`. With `Read`, `save` and `remove` fail with it.
+
+> **Google Play requirements**
+>
+> `pickContactField` exists mainly to adhere to Google Play's restrictions for
+> the Contacts Permission, which apply to apps targeting Android 17 (SDK 37).
+> You should evaluate whether `pickContactField` is enough for your app's use
+> cases. If not, you may need to submit a Play Console declaration. For more
+> information refer to
+> [Google Play's page](https://support.google.com/googleplay/android-developer/answer/16909972?sjid=14458661934730177096-EU#contacts-permissions).
 
 ## Shared sources
 
