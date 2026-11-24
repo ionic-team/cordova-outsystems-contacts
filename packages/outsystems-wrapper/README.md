@@ -12,6 +12,8 @@ until it is rebuilt. The two new plugins expose the exact same API — method
 names, options, result shapes and `OS-PLUG-CONT-*` error codes. When these
 scripts change, copy them into the corresponding JS node in ODC Studio.
 
+For O11 and service studio, you'll need to remove the mentions of Capacitor.
+
 | File (`src/`) | JS node (client action) | Notes |
 | --- | --- | --- |
 | `FindContact.js` | `FindContactJS` (FindContact) | `ContactsJSON` is byte-compatible with the previous release (birthday serialized as an ISO string); the deserialize/ForEach flow needs no changes. |
@@ -35,7 +37,7 @@ fixed text per action otherwise (the legacy plugin and non-plugin errors have no
 message). It is informational: flows should branch on `ErrorCode`, not on the
 message text.
 
-`extensibility-configuration.json` carries **both** build sources: MABS picks
+`extensibility-configuration.json` carries **both** build sources for ODC: MABS picks
 `cordova` (cordova-outsystems-contacts) or `capacitor` (capacitor-contacts)
 per shell — pin both npm sources to released tags before shipping.
 `GET_ACCOUNTS` is no longer requested: the legacy `cordova-plugin-contacts`

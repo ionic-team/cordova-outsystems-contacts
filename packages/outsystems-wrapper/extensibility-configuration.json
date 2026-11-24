@@ -2,31 +2,40 @@
     "buildConfigurations": {
         "cordova": {
             "source": {
-                "npm": "https://github.com/ionic-team/cordova-outsystems-contacts#main"
+                "npm": "https://github.com/ionic-team/cordova-outsystems-contacts#1.1.0"
             }
         },
         "capacitor": {
             "source": {
-                "npm": "https://github.com/ionic-team/capacitor-contacts#main"
+                "npm": "@capacitor/contacts@1.1.0"
+            }
+        },
+        "buildAction": {
+            "config": "$resources.buildAction.json",
+            "parameters": {
+                "CONTACTS_PERMISSION_TYPE": "$extensibilitySettings.ContactsPermissionType"
             }
         }
     },
     "pluginConfigurations": {
+        "cordova": {
+            "preferences": {
+                "android": {
+                    "CONTACTS_PERMISSION_TYPE": "$extensibilitySettings.ContactsPermissionType"
+                }
+            }
+        },
         "permissions": {
             "ios": {
                 "NSContactsUsageDescription": {
                     "description": "$extensibilitySettings.ContactsUsageDescription"
                 }
-            },
-            "android": [
-                "android.permission.READ_CONTACTS",
-                "android.permission.WRITE_CONTACTS"
-            ]
+            }
         }
     },
     "metadata": {
         "mabs-min": "11.0.0",
         "name": "Contacts Plugin",
-        "version": "2.0.0"
+        "version": "2.1.0"
     }
 }
