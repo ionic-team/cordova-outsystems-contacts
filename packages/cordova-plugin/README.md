@@ -51,6 +51,13 @@ Contacts.save(
 Contacts.save({ contact: { id: someId, nickname: 'Countess' } }, ok, fail);
 Contacts.pickContact(function (picked) { console.log(picked); }, fail);
 Contacts.remove({ id: someId }, ok, fail);
+
+// Pick a single phone number, email or address; needs no contacts permission
+Contacts.pickContactField(
+  { field: 'phone' },
+  function (picked) { console.log(picked.value, picked.type, picked.displayName); },
+  fail
+);
 ```
 
 ## Permission model
@@ -59,7 +66,9 @@ Permissions are requested **implicitly** by each method (no
 checkPermissions/requestPermissions actions): read for `find`/`pickContact`,
 read + write for `save`/`remove` on Android; Contacts access on iOS (where
 `pickContact` uses the permissionless system picker). Denials fail with
-`OS-PLUG-CONT-0020`.
+`OS-PLUG-CONT-0020`. `pickContactField` needs no permission on either
+platform. On Android, the other methods fail with `OS-PLUG-CONT-0021` when
+the permissions they need are not declared in the app's manifest.
 
 ## Errors
 
@@ -73,6 +82,8 @@ read + write for `save`/`remove` on Android; Contacts access on iOS (where
 | `OS-PLUG-CONT-0005` | Not supported |
 | `OS-PLUG-CONT-0006` | Operation cancelled (picker closed) |
 | `OS-PLUG-CONT-0020` | Permission denied |
+| `OS-PLUG-CONT-0021` | Required permission not declared in the Android manifest |
+| `OS-PLUG-CONT-0022` | The picked contact has no value of the requested kind. OutSystems only: returned by the OutSystems wrapper when it falls back to `pickContact` for `pickContactField`, never by this plugin |
 
 ## iOS notes
 
@@ -84,6 +95,41 @@ read + write for `save`/`remove` on Android; Contacts access on iOS (where
   ignored on save.
 - Contact `id`s are opaque `CNContact` identifiers; numeric ids persisted by
   the legacy AddressBook-based plugin do not resolve after migration.
+
+## Android notes
+
+`pickContactField` needs no permission: it opens the contacts app on a single
+data kind (phone, email or address), and the app grants temporary read access
+to just the row the user selects.
+
+The plugin adds `READ_CONTACTS` and `WRITE_CONTACTS` to the app's manifest
+with an `after_prepare` hook, based on the `CONTACTS_PERMISSION_TYPE`
+preference, which you can set for the Android platform in `config.xml`:
+
+```xml
+<platform name="android">
+    <preference name="CONTACTS_PERMISSION_TYPE" value="None" />
+</platform>
+```
+
+| `CONTACTS_PERMISSION_TYPE` | `READ_CONTACTS` | `WRITE_CONTACTS` |
+| --- | --- | --- |
+| `ReadWrite` (default) | declared | declared |
+| `Read` | declared | not declared |
+| `None` | not declared | not declared |
+
+Values are case-sensitive; an unset or unrecognised value is treated as
+`ReadWrite`. With `None`, only `pickContactField` works, and the other methods
+fail with `OS-PLUG-CONT-0021`. With `Read`, `save` and `remove` fail with it.
+
+> **Google Play requirements**
+>
+> `pickContactField` exists mainly to adhere to Google Play's restrictions for
+> the Contacts Permission, which apply to apps targeting Android 17 (SDK 37).
+> You should evaluate whether `pickContactField` is enough for your app's use
+> cases. If not, you may need to submit a Play Console declaration. For more
+> information refer to
+> [Google Play's page](https://support.google.com/googleplay/android-developer/answer/16909972?sjid=14458661934730177096-EU#contacts-permissions).
 
 ## Shared sources
 
@@ -102,6 +148,7 @@ The iOS implementation files (`Contacts.swift`, `ContactsMapping.swift`,
 * [`save(...)`](#save)
 * [`remove(...)`](#remove)
 * [`pickContact(...)`](#pickcontact)
+* [`pickContactField(...)`](#pickcontactfield)
 * [Interfaces](#interfaces)
 * [Type Aliases](#type-aliases)
 
@@ -210,6 +257,31 @@ contact's details.
 | **`error`**   | <code>(error: <a href="#pluginerror">PluginError</a>) =&gt; void</code> |
 
 **Since:** 1.0.0
+
+--------------------
+
+
+### pickContactField(...)
+
+```typescript
+pickContactField(options: PickContactFieldOptions, success: (picked: PickedContactField) => void, error: (error: PluginError) => void) => void
+```
+
+Launches the native contact picker UI, showing only the requested kind of
+information, and calls `success` with the single value the user selects
+(not a full contact). Fails with `OS-PLUG-CONT-0006` if the user cancels.
+
+Needs no contacts permission on either platform, which lets Android apps
+omit READ_CONTACTS from their manifest. Only one data kind can be picked
+per call.
+
+| Param         | Type                                                                                   |
+| ------------- | -------------------------------------------------------------------------------------- |
+| **`options`** | <code><a href="#pickcontactfieldoptions">PickContactFieldOptions</a></code>            |
+| **`success`** | <code>(picked: <a href="#pickedcontactfield">PickedContactField</a>) =&gt; void</code> |
+| **`error`**   | <code>(error: <a href="#pluginerror">PluginError</a>) =&gt; void</code>                |
+
+**Since:** 1.1.0
 
 --------------------
 
@@ -346,6 +418,43 @@ Options accepted by {@link IContacts.remove}.
 | Prop     | Type                | Description                             | Since |
 | -------- | ------------------- | --------------------------------------- | ----- |
 | **`id`** | <code>string</code> | The native id of the contact to remove. | 1.0.0 |
+
+
+#### PickContactFieldOptions
+
+Options accepted by {@link IContacts.pickContactField}.
+
+| Prop        | Type                                         | Description                                                                                     | Since |
+| ----------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----- |
+| **`field`** | <code>'phone' \| 'email' \| 'address'</code> | The single kind of contact information to pick. Any other value fails with `OS-PLUG-CONT-0001`. | 1.1.0 |
+
+
+#### PickedContactField
+
+The value the user picked with {@link IContacts.pickContactField}. This is
+not a full contact: it holds only the picked value, its label and the
+contact's display name.
+
+| Prop              | Type                                                                  | Description                                                                                            | Since |
+| ----------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----- |
+| **`field`**       | <code>'phone' \| 'email' \| 'address'</code>                          | The kind of value that was picked, as requested.                                                       | 1.1.0 |
+| **`value`**       | <code>string</code>                                                   | The picked phone number, email address, or postal address formatted for display, depending on `field`. | 1.1.0 |
+| **`type`**        | <code>string</code>                                                   | The label of the picked value, e.g. `mobile`, `home`, `work`.                                          | 1.1.0 |
+| **`displayName`** | <code>string</code>                                                   | The display name of the contact the value belongs to, when available.                                  | 1.1.0 |
+| **`address`**     | <code><a href="#pickedcontactaddress">PickedContactAddress</a></code> | The parts of the postal address. Only present when `field` is `address`.                               | 1.1.0 |
+
+
+#### PickedContactAddress
+
+The parts of a postal address returned by {@link IContacts.pickContactField}.
+
+| Prop                | Type                | Description           | Since |
+| ------------------- | ------------------- | --------------------- | ----- |
+| **`streetAddress`** | <code>string</code> | The street address.   | 1.1.0 |
+| **`locality`**      | <code>string</code> | The city or locality. | 1.1.0 |
+| **`region`**        | <code>string</code> | The state or region.  | 1.1.0 |
+| **`postalCode`**    | <code>string</code> | The postal code.      | 1.1.0 |
+| **`country`**       | <code>string</code> | The country.          | 1.1.0 |
 
 
 ### Type Aliases

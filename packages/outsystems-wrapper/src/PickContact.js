@@ -21,7 +21,7 @@ function onSuccess(picked) {
 function onError(err) {
   $parameters.Success = false;
   $parameters.ErrorCode = err && err.code != null ? String(err.code) : '';
-  $parameters.ErrorMessage = 'Could not pick contact';
+  $parameters.ErrorMessage = err && err.message ? err.message : 'Could not pick contact';
   $resolve();
 }
 

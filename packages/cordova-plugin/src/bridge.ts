@@ -6,6 +6,8 @@ import type {
   ContactFindResult,
   ContactRemoveOptions,
   ContactSaveOptions,
+  PickContactFieldOptions,
+  PickedContactField,
   PluginError,
 } from './definitions';
 
@@ -35,9 +37,18 @@ function pickContact(success: (contact: Contact) => void, error: (error: PluginE
   exec(success, error, 'OSContactsPlugin', 'pickContact', []);
 }
 
+function pickContactField(
+  options: PickContactFieldOptions,
+  success: (picked: PickedContactField) => void,
+  error: (error: PluginError) => void,
+): void {
+  exec(success, error, 'OSContactsPlugin', 'pickContactField', [options]);
+}
+
 module.exports = {
   find,
   save,
   remove,
   pickContact,
+  pickContactField,
 };

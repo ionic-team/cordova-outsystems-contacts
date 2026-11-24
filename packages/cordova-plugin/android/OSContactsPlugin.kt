@@ -3,7 +3,9 @@ package com.outsystems.plugins.contacts
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.provider.ContactsContract
+import android.util.Log
 import org.apache.cordova.CallbackContext
 import org.apache.cordova.CordovaPlugin
 import org.apache.cordova.PermissionHelper
@@ -17,8 +19,15 @@ import org.json.JSONObject
  * plugin): there are no checkPermissions /
  * requestPermissions actions. Each action ensures the permission it needs
  * before touching the provider — READ_CONTACTS for `find`/`pickContact`,
- * READ+WRITE for `save`/`remove`. Provider work runs on the Cordova thread
- * pool; the picker runs via startActivityForResult.
+ * READ+WRITE for `save`/`remove`. `pickContactField` is the exception and
+ * needs no permission: it runs `ACTION_PICK` on a single data-kind URI
+ * (phone, email or address) instead of the generic `Contacts.CONTENT_URI`,
+ * which makes the device's contacts app delegate temporary read permission
+ * on just the selected row. On Android 17+ the system routes the same intent
+ * to the new Contacts Picker, so no API-level branching is needed. The
+ * tradeoff is that only one data kind can be picked per call.
+ * Provider work runs on the Cordova thread pool; the picker runs via
+ * startActivityForResult.
  */
 class OSContactsPlugin : CordovaPlugin() {
 
@@ -31,6 +40,10 @@ class OSContactsPlugin : CordovaPlugin() {
     @Volatile
     private var pickCallback: CallbackContext? = null
 
+    /** Data kind of the in-flight `pickContactField` call; null for `pickContact`. */
+    @Volatile
+    private var pickField: ContactPickableField? = null
+
     private class PendingCall(
         val action: String,
         val args: JSONArray,
@@ -38,6 +51,7 @@ class OSContactsPlugin : CordovaPlugin() {
     )
 
     companion object {
+        private const val LOG_TAG = "OSContactsPlugin"
         private const val PERMISSION_REQ_CODE = 100
         private const val PICK_CONTACT_REQ_CODE = 200
         private val READ = arrayOf(Manifest.permission.READ_CONTACTS)
@@ -59,6 +73,12 @@ class OSContactsPlugin : CordovaPlugin() {
                 }
                 true
             }
+            "pickContactField" -> {
+                if (validate(action, args, callbackContext)) {
+                    dispatch(action, args, callbackContext)
+                }
+                true
+            }
             else -> false
         }
     }
@@ -70,6 +90,7 @@ class OSContactsPlugin : CordovaPlugin() {
             "find" -> toStringList(options.optJSONArray("fields")).isNotEmpty()
             "save" -> options.optJSONObject("contact") != null
             "remove" -> !options.isNull("id") && options.optString("id", "").isNotEmpty()
+            "pickContactField" -> ContactPickableField.fromKey(options.optString("field", null)) != null
             else -> true
         }
         if (!valid) error(callbackContext, ContactsError.INVALID_ARGUMENT)
@@ -89,6 +110,10 @@ class OSContactsPlugin : CordovaPlugin() {
     @Synchronized
     private fun ensurePermission(action: String, args: JSONArray, callbackContext: CallbackContext) {
         val needed = permissionsFor(action)
+        if (!getManifestPermissions().containsAll(needed.toList())) {
+            error(callbackContext, ContactsError.PERMISSION_NOT_DECLARED)
+            return
+        }
         if (needed.all { PermissionHelper.hasPermission(this, it) }) {
             dispatch(action, args, callbackContext)
         } else {
@@ -96,6 +121,21 @@ class OSContactsPlugin : CordovaPlugin() {
             if (pendingPermission.size == 1) {
                 PermissionHelper.requestPermissions(this, PERMISSION_REQ_CODE, needed)
             }
+        }
+    }
+
+    /**
+     * Returns the set of permissions declared in the app's manifest.
+     */
+    private fun getManifestPermissions(): Set<String> {
+        return try {
+            val packageInfo = cordova.activity.packageManager.getPackageInfo(
+                cordova.activity.packageName, PackageManager.GET_PERMISSIONS
+            )
+            (packageInfo.requestedPermissions ?: emptyArray()).toHashSet()
+        } catch (e: Exception) {
+            Log.d(LOG_TAG, e.message.toString())
+            emptySet()
         }
     }
 
@@ -137,6 +177,10 @@ class OSContactsPlugin : CordovaPlugin() {
             "save" -> save(args, callbackContext)
             "remove" -> remove(args, callbackContext)
             "pickContact" -> pickContact(callbackContext)
+            "pickContactField" -> {
+                val field = ContactPickableField.fromKey(args.optJSONObject(0)?.optString("field", null)) ?: return
+                pickContactField(field, callbackContext)
+            }
         }
     }
 
@@ -197,17 +241,40 @@ class OSContactsPlugin : CordovaPlugin() {
     }
 
     private fun pickContact(callbackContext: CallbackContext) {
+        startPicker(
+            Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI),
+            null,
+            callbackContext
+        )
+    }
+
+    private fun pickContactField(field: ContactPickableField, callbackContext: CallbackContext) {
+        startPicker(Intent(Intent.ACTION_PICK, field.contentUri), field, callbackContext)
+    }
+
+    /**
+     * Launches [intent] and parks [callbackContext] until the picker returns.
+     * Fails with `PENDING_OPERATION` if another picker is open and with
+     * `NOT_SUPPORTED` if no activity can handle [intent].
+     *
+     * @param intent the `ACTION_PICK` intent to launch.
+     * @param field the kind to read from the result, or null to read a whole
+     * contact (`pickContact`).
+     * @param callbackContext receives the result or error.
+     */
+    private fun startPicker(intent: Intent, field: ContactPickableField?, callbackContext: CallbackContext) {
         if (pickCallback != null) {
             error(callbackContext, ContactsError.PENDING_OPERATION)
             return
         }
         pickCallback = callbackContext
-        val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
+        pickField = field
         try {
             cordova.startActivityForResult(this, intent, PICK_CONTACT_REQ_CODE)
         } catch (e: Exception) {
             // No contacts app / picker activity on this device.
             pickCallback = null
+            pickField = null
             error(callbackContext, ContactsError.NOT_SUPPORTED)
         }
     }
@@ -215,18 +282,26 @@ class OSContactsPlugin : CordovaPlugin() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
         if (requestCode != PICK_CONTACT_REQ_CODE) return
         val callback = pickCallback ?: return
+        val field = pickField
         pickCallback = null
+        pickField = null
         when (resultCode) {
             Activity.RESULT_OK -> {
-                val contactId = intent?.data?.lastPathSegment
-                if (contactId == null) {
+                val resultUri = intent?.data
+                if (resultUri == null) {
                     error(callback, ContactsError.UNKNOWN)
                     return
                 }
                 cordova.threadPool.execute {
                     try {
-                        val contact = implementation.getContactById(contactId)
+                        val contact = if (field != null) {
+                            implementation.readPickedField(field, resultUri)
+                        } else {
+                            resultUri.lastPathSegment?.let { implementation.getContactById(it) }
+                        }
                         if (contact != null) callback.success(contact) else error(callback, ContactsError.UNKNOWN)
+                    } catch (e: SecurityException) {
+                        error(callback, ContactsError.PERMISSION_DENIED)
                     } catch (e: Exception) {
                         error(callback, ContactsError.UNKNOWN)
                     }

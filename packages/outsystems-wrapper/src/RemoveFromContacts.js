@@ -15,7 +15,7 @@ function onSuccess() {
 function onError(contactError) {
   $parameters.Success = false;
   $parameters.ErrorCode = contactError && contactError.code != null ? String(contactError.code) : '';
-  $parameters.ErrorMessage = 'Error deleting contact';
+  $parameters.ErrorMessage = contactError && contactError.message ? contactError.message : 'Error deleting contact';
   $resolve();
 }
 
